@@ -1,0 +1,259 @@
+---
+title: "Final Project"
+name: Jillian Davies, Davis Reese, Natalie Daines
+format: html
+editor: visual
+---
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+```{r}
+#| include: false
+# load packages
+library(tidyverse)
+library(scales)
+library(dplyr)
+```
+
+**Question: How does Total Expenditure affect SAT Scores by State?**
+
+This project investigates the link between state education spending and average SAT scores. Using data on total expenditure, we identified trends in SAT scores through statistical analysis.
+
+**Import and Tidy School Scores Dataset**
+
+```{r}
+SchoolScores <- read.csv("SchoolScores.csv", header = TRUE) |>
+  select(State.Name, Year, Total.Math, Total.Verbal)|>
+  mutate(State.Name = tolower(State.Name))|>
+  filter(Year >= 2005 & Year <= 2015)
+
+head(SchoolScores)
+
+```
+
+In this R code, we performed several data manipulation steps on the "SchoolScores" dataset. First, we imported the dataset using \`read.csv()\`, specifying that the first row contains column headers (\`header = TRUE\`). We then selected a subset of columns using the \`select()\` function, keeping only "State.Name", "Year", "Total.Math", and "Total.Verbal". To ensure consistency, we transformed the "State.Name" column to lowercase using \`mutate()\`. Next, we filtered the data to include only rows where the "Year" is between 2005 and 2015, inclusive, so that our data has aligning years with the "States" data. Finally, we used the \`head()\` function to display the first few rows of the cleaned dataset, which now contains relevant data for analysis.
+
+**Import and Tidy State Educational Dataset**
+
+```{r}
+States <- read.csv("States.csv", header = TRUE) |>
+  select(STATE, YEAR, TOTAL_EXPENDITURE)|>
+  mutate(STATE = tolower(STATE))
+
+head(States)
+
+
+```
+
+In this code, we performed a series of data manipulation steps on the "States" dataset. First, we imported the data using \`read.csv()\`, with the assumption that the first row contains column headers (\`header = TRUE\`). We then selected three columns — "STATE", "YEAR", and "TOTAL_EXPENDITURE" — using the \`select()\` function to focus on relevant variables. Next, we applied the \`mutate()\` function to convert all entries in the "STATE" column to lowercase, ensuring consistency with other datasets. Finally, we used the \`head()\` function to display the first few rows of the cleaned dataset, which now contains the selected and transformed data.
+
+**Allowing for the difference in name so it still works**
+
+```{r}
+library(stringr)
+
+States <- States |>
+  mutate(STATE = str_replace_all(STATE, '_', ' '))
+States <- States |>
+  mutate(STATE = str_to_title(tolower(STATE))) |>
+  mutate(STATE = tolower(STATE))|>
+filter(YEAR >= 2005 & YEAR <= 2015)
+head(States)
+
+```
+
+In this code, we applied additional data transformations to the "States" dataset. First, we used the \`mutate()\` function combined with \`str_replace_all()\` from the \`stringr\` package to replace any underscores in the "STATE" column with spaces, cleaning up the formatting of state names. Next, we applied a two-step process to standardize the state names: first converting the "STATE" column to title case (capitalizing the first letter of each word) using \`str_to_title()\`, and then converting the entire "STATE" column to lowercase with \`tolower()\`, ensuring uniformity. Finally, we filtered the dataset to include only rows where the "YEAR" is between 2005 and 2015, and used \`head()\` to display the first few rows of the cleaned dataset, which now contains the transformed and filtered data.
+
+**Joining States and School Scores Datasets**
+
+```{r}
+joined_data <- States |>
+  inner_join(SchoolScores, by = c("YEAR" = "Year", "STATE" = "State.Name"))
+      head(joined_data)
+
+```
+
+In this code, we performed an inner join between the "States" and "SchoolScores" datasets using the \`inner_join()\` function from the \`dplyr\` package. The join was based on matching the "YEAR" column in the "States" dataset with the "Year" column in the "SchoolScores" dataset, and the "STATE" column in the "States" dataset with the "State.Name" column in the "SchoolScores" dataset. This operation merged the two datasets, keeping only the rows where there were matching values in both datasets. Finally, we used the \`head()\` function to display the first few rows of the resulting \`joined_data\`, which now contains combined information from both datasets for the specified years and states.
+
+**Average SAT Math Score for all States**
+
+```{r}
+joined_data_2015 <- joined_data |> filter(YEAR == 2015)
+ggplot(joined_data_2015, aes(x = STATE, y = Total.Math)) +
+  geom_bar(stat = "identity", color = "lightskyblue4", fill = "lightskyblue1") +
+  theme_minimal() +
+  labs(
+    title = "Average SAT Math Scores by State (2015)",
+    x = "State",
+    y = "Average SAT Math Score"
+  ) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  
+```
+
+This code filters the \`joined_data\` dataset to include only records from the year 2015 using the line \`joined_data_2015 \<- joined_data \|\> filter(YEAR == 2015)\`. It then creates a bar chart where the x-axis represents the states and the y-axis represents the average SAT Math scores for each state. The \`geom_bar(stat = "identity")\` function is used to create the bars, with the heights of the bars corresponding to the values in the \`Total.Math\` column. The \`theme_minimal()\` function simplifies the plot's appearance by removing background grid lines and reducing visual clutter. The \`labs()\` function is used to add a title and labels to the x and y axes. Additionally, the \`theme(axis.text.x = element_text(angle = 90, hjust = 1))\` rotates the state labels on the x-axis by 90 degrees for better readability, especially when there are many states listed.
+
+**Expenditures by State for the most recent year**
+
+```{r}
+ggplot(joined_data_2015, aes(x = STATE, y = TOTAL_EXPENDITURE)) +
+  geom_bar(stat = "identity", fill = "lightpink", color = "hotpink") +
+  labs(title = "Expenditures by State (2015)",
+       x = "State",
+       y = "Expenditure (in Million $)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(labels = label_number())
+```
+
+This code generates a bar chart to visualize the expenditures on public K-12 education by state for the year 2015. The dataset is filtered to include only records from 2015, and ggplot() is used to create the plot with the x-axis representing the states and the y-axis representing the total expenditure (in millions of dollars) for each state. The geom_bar(stat = "identity") function is used to create bars where the height of each bar corresponds to the total expenditure in that state. The labs() function adds a title and axis labels, making it clear that the chart shows state-level education expenditures. The theme_minimal() is used to create a clean, simple design, and theme(axis.text.x = element_text(angle = 90, hjust = 1)) rotates the state labels on the x-axis to make them more readable, especially when there are many states. Additionally, scale_y_continuous(labels = label_number()) formats the y-axis labels to display the expenditure values in a more readable number format. Because the default y-axis labels were in scientific notation. This chart allows us to compare how different states allocate funding for public education, highlighting the disparities or trends in educational spending across the U.S. in 2015.
+
+**Average SAT MATH SCORES Lowest vs. Highest: Same Graph**
+
+```{r}
+joined_data_ID <- joined_data |> filter(STATE %in% c("illinois", "delaware"))
+ggplot(joined_data_ID, aes(x = YEAR, y = Total.Math, color = STATE, group = STATE)) +
+  geom_line(size = 1) +  
+  geom_point(size = 1) +  
+  labs(title = "Line Graph of SAT Math Scores: Illinois vs. Delaware",
+       x = "Year",
+       y = "SAT Math Score",
+       color = "State") +
+  theme_minimal() +
+  scale_color_manual(values = c("illinois" = "turquoise", "delaware" = "sienna1")) +
+   scale_x_continuous(breaks = seq(2005, 2015, by = 1))
+```
+
+This code creates a line graph comparing the average SAT Math scores over time for Illinois, which typically has the highest scores, and Delaware, which tends to have the lowest scores. The dataset is filtered to include only records from these two states using \`joined_data_ID \<- joined_data \|\> filter(STATE %in% c("illinois", "delaware"))\`. The graph is then created with \`ggplot()\`, where the x-axis represents the years and the y-axis represents the average SAT Math scores. The \`geom_line(size = 1)\` function draws a line connecting the data points for each state, while \`geom_point(size = 1)\` adds markers to each year, making the trends easier to see. The \`labs()\` function sets the title and labels for the axes, and the \`scale_color_manual()\` function assigns specific colors to Illinois (turquoise) and Delaware (sienna1) to distinguish them clearly. The \`scale_x_continuous(breaks = seq(2005, 2015, by = 1))\` ensures the x-axis displays the years from 2005 to 2015 with annual breaks, making the time progression easy to follow. Using \`theme_minimal()\` simplifies the plot design for clarity. The graph clearly shows that Illinois generally performs better than Delaware in SAT Math scores, a disparity that could be attributed to factors such as differences in educational funding, access to resources, and socioeconomic conditions, with Illinois benefiting from more robust educational infrastructure while Delaware may face more challenges in these areas.
+
+**Average SAT VERBAL SCORES Lowest vs. Highest: Same Graph**
+
+```{r}
+joined_data_ID <- joined_data |> filter(STATE %in% c("illinois", "delaware"))
+ggplot(joined_data_ID, aes(x = YEAR, y = Total.Verbal, color = STATE, group = STATE)) +
+  geom_line(size = 1) +  
+  geom_point(size = 1) +  
+  labs(title = "Line Graph of SAT Verbal Scores: Illinois vs. Delaware",
+       x = "Year",
+       y = "SAT Verbal Score",
+       color = "State") +
+  theme_minimal() +
+  scale_color_manual(values = c("illinois" = "turquoise", "delaware" = "sienna1")) +
+ scale_x_continuous(breaks = seq(2005, 2015, by = 1))
+```
+
+This code creates a line graph comparing SAT Verbal scores over time for Illinois, which generally has higher scores, and Delaware, which tends to have lower scores. The dataset is filtered to include only data for these two states using the line \`joined_data_ID \<- joined_data \|\> filter(STATE %in% c("illinois", "delaware"))\`. In the plot, \`geom_line(size = 1)\` is used to draw lines connecting the data points for each state, while \`geom_point(size = 1)\` adds markers at each year's data point to highlight the trends. The \`labs()\` function sets the title and axis labels, making it clear that the graph displays SAT Verbal scores by state. The x-axis is set to display the years from 2005 to 2015 with \`scale_x_continuous(breaks = seq(2005, 2015, by = 1))\`. The use of \`theme_minimal()\` simplifies the chart's design for clarity. The graph illustrates that Illinois tends to have higher SAT Verbal scores than Delaware, which could be explained by Illinois benefiting from better-funded schools, more access to advanced academic resources, and a wider array of educational programs. In contrast, Delaware may face challenges such as lower funding, fewer academic resources, or greater socioeconomic disparities, all of which could contribute to its consistently lower SAT Verbal scores.
+
+**Average SAT Math Score for 2005-2015 in Utah**
+
+```{r}
+utah_data <- joined_data |>
+  filter(STATE == "utah")
+
+ggplot(utah_data, aes(x = YEAR, y = Total.Math)) +
+  geom_line(color = "blue2") +  
+  labs(title = "Average SAT Math Scores for Utah", x = "Year", y = "SAT Math Score") +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(2005,2015, by =1))
+
+```
+
+This code generates a line graph showing the average SAT Math scores for Utah from 2005 to 2015. First, the dataset is filtered to include only records for Utah using \`utah_data \<- joined_data \|\> filter(STATE == "utah")\`. The graph is created with \`ggplot()\`, where the x-axis represents the years and the y-axis shows the average SAT Math scores for Utah. The \`geom_line(color = "blue2")\` function draws a blue line connecting the data points for each year, highlighting the trend over time. \`theme_minimal()\` is applied to keep the design simple and clean, while \`scale_x_continuous(breaks = seq(2005, 2015, by = 1))\` ensures the x-axis displays the years from 2005 to 2015 with annual intervals. The graph reveals a clear upward trend in Utah's SAT Math scores over this period, which could be attributed to increased investment in education. As the state has allocated more funding to public schools, particularly in terms of teacher quality, instructional resources, and advanced academic programs, students in Utah have likely benefitted from these improvements, leading to higher performance on the SAT Math section.
+
+**Average SAT Verbal Score for 2005-2015 in Utah**
+
+```{r}
+ggplot(utah_data, aes(x = YEAR, y = Total.Verbal)) + 
+  geom_line(color = "green4") + 
+  labs(title = "Average SAT Verbal Scores for Utah",
+       x = "Year", 
+       y = "SAT Verbal Score") + 
+  theme_minimal()+
+  scale_x_continuous(breaks = seq(2005,2015, by =1))
+
+```
+
+This code creates a line graph showing the average SAT Verbal scores for Utah from 2005 to 2015. The dataset is first filtered to include only records for Utah with \`utah_data \<- joined_data \|\> filter(STATE == "utah")\`. The plot is generated using \`ggplot()\`, where the x-axis represents the years and the y-axis shows the average SAT Verbal scores for Utah. The \`geom_line(color = "green4")\` function draws a green line connecting the data points for each year, visually representing the trend in SAT Verbal scores over time. The \`theme_minimal()\` is used to simplify the chart’s design, while \`scale_x_continuous(breaks = seq(2005, 2015, by = 1))\` ensures the years are displayed on the x-axis at regular intervals. The graph shows an upward trend in Utah’s SAT Verbal scores over the years, which may be attributed to increasing investments in education. As the state has increased funding for public schools, including efforts to improve teacher quality, classroom resources, and academic support programs, these improvements likely contributed to better student performance on the SAT Verbal section.
+
+**Total Expenditures for Education in Utah and Arizona 2005-2015**
+
+```{r}
+UtahArizona <- joined_data |>
+  filter(STATE %in% c("utah", "arizona"))
+
+ggplot(UtahArizona, aes(x = YEAR, y = TOTAL_EXPENDITURE, color = STATE, group = STATE)) +  geom_line() + 
+  labs(title = "Total Expenditures in Education for Utah and Arizona",
+       x = "Year", 
+       y = "Total Expenditures",
+color = "State")+ 
+  theme_minimal()+
+  scale_color_manual(values = c("utah" = "blue", "arizona" = "red")) +
+  scale_y_continuous(labels = label_number())+
+  scale_x_continuous(breaks = seq(2005,2015, by =1))
+
+```
+
+This code creates a line graph comparing total expenditures on public education in Utah and Arizona from 2005 to 2015. The dataset is filtered to include only records for Utah and Arizona using \`UtahArizona \<- joined_data \|\> filter(STATE %in% c("utah", "arizona"))\`. The \`ggplot()\` function generates the plot, with the x-axis representing the years and the y-axis showing the total expenditures on education (in thousands of dollars). The \`geom_line()\` function is used to draw lines for each state, connecting the annual data points and illustrating the trends in spending over time. To distinguish between Utah and Arizona, the \`scale_color_manual(values = c("utah" = "blue", "arizona" = "red"))\` function assigns the color blue to Utah and red to Arizona. The \`scale_y_continuous(labels = label_number())\` ensures that the y-axis labels are formatted as readable numbers, and \`scale_x_continuous(breaks = seq(2005, 2015, by = 1))\` sets the x-axis to display the years from 2005 to 2015 with annual intervals. The graph shows that Arizona consistently spends more on public education than Utah over this period, which could reflect differences in state-level funding priorities, educational policies, or revenue availability. The spending trend in both states could also be influenced by economic conditions and political decisions regarding educational investment during these years.
+
+**Linear Regression Model: How do a state's expenditures predict average SAT math scores?**
+
+```{r}
+ggplot(UtahArizona, aes(x = Total.Math, y = TOTAL_EXPENDITURE, color = STATE)) +  
+  geom_point() +  
+  geom_smooth(method = "lm", se = TRUE) +  
+  labs(title = "Linear Regression with Confidence Interval",
+       x = "Total Math Score",
+       y = "Total Expenditure") +
+  theme_minimal() +
+  scale_y_continuous(labels = label_number())
+
+```
+
+This graph shows the relationship between "Total Math Score" and "Total Expenditure" for Utah and Arizona, with each state represented by a separate color. Arizona exhibits a strong negative trend, where higher math scores are associated with lower expenditures, as shown by the steep downward slope. In contrast, Utah displays a positive trend, with higher math scores corresponding to increased expenditures. The distinct patterns between the two states suggest significant differences in how expenditures and math scores are related, which may be influenced by state-specific education policies or funding approaches.
+
+**Linear Regression Table: Utah and Arizona**
+
+```{r}
+lm_model <- lm(TOTAL_EXPENDITURE ~ Total.Math, data = UtahArizona)
+
+summary(lm_model)
+
+
+```
+
+The linear regression model indicates a significant inverse relationship between "Total Math" scores and "Total Expenditures," with a p-value less than 0.001. The coefficient of −113,411 suggests that for every one-point increase in math scores, expenditures decrease by an estimated \$113,411. The model explains approximately 86.2% of the variation in expenditures (R\^2=0.8626), demonstrating a strong fit. While the intercept of 67,979,000 represents the estimated expenditures when math scores are zero, this value is likely not meaningful in context. Overall, the model suggests higher math scores are associated with lower expenditures, warranting further investigation into the reasons behind this relationship.
+
+**Correlation Plot for Expenditures and SAT Scores in Utah and Arizona**
+
+```{r}
+library(DataExplorer)
+
+DataExplorer:: plot_correlation(UtahArizona)
+
+```
+
+This code creates a correlation table looking at many different features. The correlation between total expenditure and total SAT math scores was -0.93. This means that when total expenditure goes down, math scores go up, and when expenditure goes up, math scores go down. This may not make sense at first, but it could also mean that they truly are independent and they just happen to have a strong correlation, though that is unlikely. More likely it means that there are lurking variables affecting it that we don’t see. Perhaps that money spent is not going towards math education, which creates poorer math scores. Perhaps that money is being spent on a curriculum that teaches math in a confusing way, like the way many people feel about Common Core in public school education. A poor math education in school would likely mean lower math SAT scores. 
+
+**Multiple Linear Regression Model between SAT Math and Verbal Scores and Total Expenditure**
+
+```{r}
+model_combined <- lm(cbind(Total.Math, Total.Verbal) ~ TOTAL_EXPENDITURE, data = joined_data)
+summary(model_combined)
+```
+
+The linear regression analysis reveals a negative relationship between "Total Expenditure" and both "Total Math" and "Total Verbal" scores. In the "Math model", the coefficient for "Total Expenditure" is −4.875e\^, with a p-value of 1.564e\^-10, suggesting a statistically significant decrease in math scores as expenditure increases. Similarly, in the Verbal model, the coefficient is −7.733e\^−07, with a p-value of 1.56e\^−10, indicating a slight decrease in verbal scores with higher expenditure. However, the low R\^2 values (0.027880 for Math and 0.07094 for Verbal) suggest that "Total Expenditure" accounts for only a small portion of the variation in the scores. This implies that while expenditure has some impact, other factors likely play a much larger role in determining the scores.
+
+**Linear Regression Model between SAT Math Scores and Total Expenditure**
+
+```{r}
+result <- lm(Total.Math ~ TOTAL_EXPENDITURE, data = joined_data)
+summary(result)
+```
+
+The linear regression model presented here examines the relationship between SAT Math scores and total expenditure. The model reveals a statistically significant negative relationship between the two variables (p-value = 7.512e-05). This indicates that as total expenditure increases, SAT Math scores tend to decrease. The adjusted R-squared value of 0.02603 suggests that approximately 2.6% of the variation in SAT Math scores can be explained by variations in total expenditure. It's important to note that while the relationship is statistically significant, it doesn't imply a causal link between the two variables. Further research is needed to explore the underlying factors contributing to this association.
+
+**Conclusion:**
+
+The correlation analysis and linear regression model indicate a positive relationship between increased education spending and higher SAT scores. While the correlation is moderate, the statistical significance of the regression model suggests a meaningful association. This implies that investing more in education may lead to improved student performance. However, it's important to acknowledge that other factors, such as socioeconomic conditions, school quality, and student demographics, also significantly influence SAT scores.
